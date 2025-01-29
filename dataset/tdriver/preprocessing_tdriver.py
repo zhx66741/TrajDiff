@@ -179,8 +179,7 @@ def _normalization(lst_df):
 
 
 def _get_simi_fn(fn_name):
-    fn =  {'lcss': tdist.lcss, 'edr': tdist.edr, 'frechet': tdist.frechet,
-            'discret_frechet': tdist.discret_frechet,'sspd':tdist.sspd,'hausdorff': tdist.hausdorff, 'edwp': edwp}.get(fn_name, None)
+    fn =  {'discret_frechet': tdist.discret_frechet,'sspd':tdist.sspd,'hausdorff': tdist.hausdorff}.get(fn_name, None)
     if fn_name == 'lcss' or fn_name == 'edr':
         fn = partial(fn, eps = 0.25)
     return fn
@@ -234,20 +233,6 @@ def _simi_comp_operator(fn, df_trajs, sub_idx):
     return simi
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if __name__ == '__main__':
     min_lon = 116.25  # √
     max_lon = 116.5  # √
@@ -274,4 +259,4 @@ if __name__ == '__main__':
     #
     # 3
     # filtering_data()
-    traj_simi_computation('discret_frechet')
+    traj_simi_computation('discret_frechet')         # ['hausdorff','sspd','discret_frechet']
