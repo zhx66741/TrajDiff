@@ -123,8 +123,7 @@ def _normalization(lst_df):
 
 
 def _get_simi_fn(fn_name):
-    fn =  {'lcss': tdist.lcss, 'edr': tdist.edr, 'frechet': tdist.frechet,
-            'discret_frechet': tdist.discret_frechet,'sspd':tdist.sspd,'hausdorff': tdist.hausdorff, 'edwp': edwp}.get(fn_name, None)
+    fn =  {'discret_frechet': tdist.discret_frechet,'sspd':tdist.sspd,'hausdorff': tdist.hausdorff}.get(fn_name, None)
     if fn_name == 'lcss' or fn_name == 'edr':
         fn = partial(fn, eps = 0.25)
     return fn
@@ -198,10 +197,10 @@ if __name__ == "__main__":
     pretraining_data_path = root_path + "/porto_20w.pkl"
     fine_tuning_data_path = root_path + "/porto_1w.pkl"
 
-    # init_cellspace()
+    init_cellspace()
     clean_and_output_data()
     # filtering_data()
-    traj_simi_computation('frechet')
+    traj_simi_computation('frechet')    # ['hausdorff','sspd','']
 
 
 
