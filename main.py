@@ -102,10 +102,7 @@ def fine_tuning(args):
         print("[Training] ep={}, avg_loss={:.7f}, @={:.7f}".format(i_ep, loss_ep_avg, time.time() - epoch_time))
 
         eval_result = Test_Eval(model,mlp,'eval')
-        test_result = Test_Eval(model,mlp,'test')
         print('eval:hr1:{},hr5:{},hr10:{},hr20:{},hr50:{},h5r20:{}'.format(*eval_result))
-        print('test:hr1:{},hr5:{},hr10:{},hr20:{},hr50:{},h5r20:{}'.format(*test_result))
-
         if eval_result[0] > best_hr_train :
             best_epoch = i_ep
             best_hr_train = eval_result[0]
@@ -151,7 +148,7 @@ def Test_Eval(model,mlp,mode):
 
     datasets_simi = torch.tensor(datasets_simi, device=args.device, dtype=torch.float)
     datasets_simi = (datasets_simi + datasets_simi.T) / max_distance
-    traj_outs = []  # 用于保存模型输出
+    traj_outs = []  
 
     for i_batch, batch in enumerate(dl.trajsimi_dataset_generator_single_batchi(datasets)):  # [bs,seq_len,emb_dim]
         traj_p,traj_xy,traj_len = batch
