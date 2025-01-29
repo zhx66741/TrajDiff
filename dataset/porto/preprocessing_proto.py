@@ -191,7 +191,7 @@ if __name__ == "__main__":
 
     root_path = os.getcwd()
     raw_data_path = root_path + '/train(1).csv'
-    clean_data_path = root_path + '/clean_porto.pkl'            # 处理好的
+    clean_data_path = root_path + '/clean_porto.pkl'            
     cellspace_path = root_path + '/porto_cellspace100.pkl'
 
     pretraining_data_path = root_path + "/porto_20w.pkl"
