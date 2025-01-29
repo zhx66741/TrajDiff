@@ -200,7 +200,7 @@ if __name__ == "__main__":
     init_cellspace()
     clean_and_output_data()
     # filtering_data()
-    traj_simi_computation('frechet')    # ['hausdorff','sspd','']
+    traj_simi_computation('frechet')    # ['hausdorff','sspd','discret_frechet']
 
 
 
