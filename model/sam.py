@@ -5,8 +5,8 @@ import torch.nn.functional as F
 class AdaLN(nn.Module):
     def __init__(self, input_dim, eps=1e-6):
         super(AdaLN, self).__init__()
-        self.gamma = nn.Parameter(torch.ones(input_dim))  # 可学习的缩放参数
-        self.beta = nn.Parameter(torch.zeros(input_dim))  # 可学习的偏移参数
+        self.gamma = nn.Parameter(torch.ones(input_dim))  
+        self.beta = nn.Parameter(torch.zeros(input_dim))  
         self.eps = eps
 
     def forward(self, x):
