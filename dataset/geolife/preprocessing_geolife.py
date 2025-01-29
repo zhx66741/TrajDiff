@@ -174,8 +174,7 @@ def _normalization(lst_df):
 
 
 def _get_simi_fn(fn_name):
-    fn =  {'lcss': tdist.lcss, 'edr': tdist.edr, 'frechet': tdist.frechet,
-            'discret_frechet': tdist.discret_frechet,'sspd':tdist.sspd,'hausdorff': tdist.hausdorff, 'edwp': edwp}.get(fn_name, None)
+    fn =  {'discret_frechet': tdist.discret_frechet,'sspd':tdist.sspd,'hausdorff': tdist.hausdorff}.get(fn_name, None)
     if fn_name == 'lcss' or fn_name == 'edr':
         fn = partial(fn, eps = 0.25)
     return fn
@@ -247,15 +246,15 @@ if __name__ == "__main__":
     fine_tuning_data_path = root_path + "/geolife_1w.pkl"
 
     # 1. init_cellspace
-    # init_cellspace()
+    init_cellspace()
 
     # 2
-    # traj_paths = get_all_trajs_path(raw_data_path)      # 18670
-    # trajs = batch_read_traj(traj_paths)                 #
-    # print(len(trajs))
-    # clean_and_output_data(trajs)
+    traj_paths = get_all_trajs_path(raw_data_path)      # 18670
+    trajs = batch_read_traj(traj_paths)                 #
+    print(len(trajs))
+    clean_and_output_data(trajs)
 
     # 3.
     # filtering_data()
-    traj_simi_computation('discret_frechet')
+    traj_simi_computation('discret_frechet')            # ['hausdorff','sspd','discret_frechet']
 
