@@ -6,4 +6,6 @@
 
 3.Execute the data processing script, e.g., /dataset/porto/preprocessing_porto.py.
 
-4.
+4.Run the following command to train the model:
+
+python main.py --gpu 0 --seed 18 --city porto --measure sspd --load_checkpoint 1
