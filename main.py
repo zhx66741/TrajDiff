@@ -231,5 +231,5 @@ if __name__ == "__main__":
     for arg, value in vars(args).items():
         print(f"{arg}: {value}")
     dl = DL(args)
-    # pre_train(args)
+    pre_train(args)
     fine_tuning(args)
