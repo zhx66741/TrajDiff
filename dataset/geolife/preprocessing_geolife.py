@@ -1,21 +1,17 @@
 import os
 import math
 import time
-import skmob
 import pickle
 import random
 import numpy as np
 import pandas as pd
 import multiprocessing as mp
 from functools import partial
-from ast import literal_eval
 import traj_dist.distance as tdist
-from TrajDiff.utils.edwp import edwp
 
 
-
-from TrajDiff_dif.utils.tools import lonlat2meters, merc2cell2
-from TrajDiff_dif.utils.cellspace import CellSpace
+from TrajDiff.utils.tools import lonlat2meters
+from TrajDiff.utils.cellspace import CellSpace
 
 
 def inrange(lon, lat):
@@ -56,10 +52,8 @@ def get_all_trajs_path(data_path):
 
 def read_traj(traj_path):
     df = pd.read_csv(traj_path, header=None, sep=',', skiprows=6, names=['lat', 'lon', 'zero', 'alt', 'days', 'date', 'time'])
-    # df["timestamp"] = df["date"] + ' ' + df["time"]
     lats = df["lat"].to_list()
     lons = df["lon"].to_list()
-    # times = df["timestamp"].to_list()
     trajs = []
     for lat, lon in zip(lats, lons):
         record = [lon, lat]
@@ -222,8 +216,7 @@ def _simi_comp_operator(fn, df_trajs, sub_idx):
             t_j = np.array(df_trajs.iloc[_j].merc_seq)
             simi_row.append( float(fn(t_i, t_j)) )
         simi.append(simi_row)
-    print('simi_comp_operator ends. sub_idx=[{}:{}], pid={}' \
-                    .format(sub_idx[0], sub_idx[-1], os.getpid()))
+    print('simi_comp_operator ends. sub_idx=[{}:{}], pid={}'.format(sub_idx[0], sub_idx[-1], os.getpid()))
     return simi
 
 
@@ -245,13 +238,13 @@ if __name__ == "__main__":
     fine_tuning_data_path = root_path + "/geolife_1w.pkl"
 
     # 1. init_cellspace
-    # init_cellspace()
+    init_cellspace()
 
     # 2
-    # traj_paths = get_all_trajs_path(raw_data_path)      # 18670
-    # trajs = batch_read_traj(traj_paths)                 #
-    # print(len(trajs))
-    # clean_and_output_data(trajs)
+    traj_paths = get_all_trajs_path(raw_data_path)      # 18670
+    trajs = batch_read_traj(traj_paths)                 #
+    print(len(trajs))
+    clean_and_output_data(trajs)
     """
     18670done!
     18670
@@ -260,6 +253,6 @@ if __name__ == "__main__":
     Preprocess end. @=31
     """
     # 3.
-    # filtering_data()
+    filtering_data()
     traj_simi_computation('sspd')            # ['hausdorff','sspd','discret_frechet']
 

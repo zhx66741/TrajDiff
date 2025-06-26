@@ -8,9 +8,10 @@ import multiprocessing as mp
 from functools import partial
 from ast import literal_eval
 import traj_dist.distance as tdist
-from TrajDiff_dif.utils.edwp import edwp
-from TrajDiff_dif.utils.cellspace import CellSpace
-from TrajDiff_dif.utils.tools import lonlat2meters
+
+
+from TrajDiff.utils.cellspace import CellSpace
+from TrajDiff.utils.tools import lonlat2meters
 
 
 def inrange(lon, lat):
@@ -202,7 +203,7 @@ if __name__ == "__main__":
     fine_tuning_data_path = root_path + "/porto_1w.pkl"
 
     # init_cellspace()
-    # clean_and_output_data()
+    clean_and_output_data()
     """
     Preprocessed-rm length. #traj=1499510
     Preprocessed-rm range. #traj=1372725

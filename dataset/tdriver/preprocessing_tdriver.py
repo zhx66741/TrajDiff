@@ -8,13 +8,11 @@ import numpy as np
 import pandas as pd
 import multiprocessing as mp
 from functools import partial
-from ast import literal_eval
 import traj_dist.distance as tdist
-from TrajDiff_dif.utils.edwp import edwp
-
 from skmob.preprocessing import detection
 
-from TrajDiff.utils.tools import lonlat2meters,merc2cell2
+
+from TrajDiff.utils.tools import lonlat2meters
 from TrajDiff.utils.cellspace import CellSpace
 
 
@@ -247,13 +245,13 @@ if __name__ == '__main__':
     clean_data_path = root_path + '/clean_tdriver.pkl'
     fine_tuning_data_path = root_path + "/tdriver_1w.pkl"
     # 1. init_cellspace
-    # init_cellspace()
+    init_cellspace()
 
     # 2. extract the trips
     # extraction rules -> minutes_for_a_stop is 5 mins, spatial_radius is 100m
-    # all_trips = trip_extraction(minutes_for_a_stop=5.0, spatial_radius_km=0.1)
-    # trips = [trip["traj"] for trip in all_trips]
-    # clean_and_output_data(trips)
+    all_trips = trip_extraction(minutes_for_a_stop=5.0, spatial_radius_km=0.1)
+    trips = [trip["traj"] for trip in all_trips]
+    clean_and_output_data(trips)
     """
     Preprocessed-rm range. #traj=669350
     Preprocessed-rm length. #traj=33397
@@ -261,5 +259,5 @@ if __name__ == '__main__':
     """
     #
     # 3
-    # filtering_data()
+    filtering_data()
     traj_simi_computation('discret_frechet')         # ['hausdorff','sspd','discret_frechet']
