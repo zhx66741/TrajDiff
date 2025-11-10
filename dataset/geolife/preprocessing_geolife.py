@@ -1,3 +1,4 @@
+# follow SIMformer
 import os
 import math
 import time
@@ -10,8 +11,17 @@ from functools import partial
 import traj_dist.distance as tdist
 
 
-from TrajDiff.utils.tools import lonlat2meters
-from TrajDiff.utils.cellspace import CellSpace
+
+
+
+def lonlat2meters(lon, lat):
+    R = 6378137.0  # WGS84 椭球体半径
+    # 限制纬度范围，避免无穷大
+    lat = max(min(lat, 85.05112878), -85.05112878)
+
+    x = R * math.radians(lon)
+    y = R * math.log(math.tan(math.pi / 4 + math.radians(lat) / 2))
+    return x, y
 
 
 def inrange(lon, lat):
@@ -20,27 +30,11 @@ def inrange(lon, lat):
     return True
 
 
-def init_cellspace():
-    # 1. create cellspase
-    # 2. initialize cell embeddings (create graph, train, and dump to file)
-    x_min, y_min = lonlat2meters(min_lon, min_lat)
-    x_max, y_max = lonlat2meters(max_lon, max_lat)
-    x_min -= 500
-    y_min -= 500
-    x_max += 500
-    y_max += 500
-
-    cell_size = int(100)
-    cs = CellSpace(cell_size, cell_size, x_min, y_min, x_max, y_max)
-    with open(cellspace_path, 'wb') as fh:
-        pickle.dump(cs, fh, protocol = pickle.HIGHEST_PROTOCOL)
-    return
-
 ############################################################################
 
 def get_all_trajs_path(data_path):
     traj_paths = []
-    for i in range(0,182):
+    for i in range(0, 182):
         user_data_path = data_path + '/' + str(i).zfill(3)
         if os.path.exists(user_data_path):
             traj_data_path = user_data_path + '/Trajectory'
@@ -71,7 +65,7 @@ def batch_read_traj(traj_paths):
     print(f'{len(all_trajs )}done!')
     return all_trajs
 
-def filter_data(src, cs: CellSpace):
+def filter_data(src, cs):
     merc_seq_ = [list(lonlat2meters(p[0], p[1])) for p in src]
     tgt = [[cs.get_cellid_by_point(*merc), wgs, merc] for wgs, merc in zip(src, merc_seq_)]
     tgt = [v for i, v in enumerate(tgt) if i == 0 or v[0] != tgt[i - 1][0]]
@@ -81,39 +75,39 @@ def filter_data(src, cs: CellSpace):
 
 def clean_and_output_data(data):
     _time = time.time()
-    cellspace = pickle.load(open(cellspace_path,'rb'))
+    from TKDE_final.utils.cellspace import CellSpace
+    cellspace = CellSpace(cell_size, cell_size, min_lon, min_lat, max_lon, max_lat)
     dfraw = pd.DataFrame({'wgs_seq': [traj for traj in data]})
 
     # 1.range filter
     dfraw['inrange'] = dfraw.wgs_seq.map(lambda traj: sum([inrange(p[0], p[1]) for p in traj]) == len(traj))
     dfraw = dfraw[dfraw.inrange == True]
 
-    print('Preprocessed-rm range. #traj={}'.format(dfraw.shape[0]))     #
+    print('==========> Preprocessed-rm range. #traj={}'.format(dfraw.shape[0]))
 
     # 2.
-    dfraw['wgs_seq'],dfraw['merc_seq'] = zip(* dfraw.wgs_seq.apply(lambda traj:filter_data(traj,cellspace)))
+    dfraw['wgs_seq'], dfraw['merc_seq'] = zip(* dfraw.wgs_seq.apply(lambda traj:filter_data(traj, cellspace)))
 
     # 3.len filter
-    dfraw['trajlen'] = dfraw.wgs_seq.apply(lambda traj: len(traj))
-    dfraw = dfraw[(dfraw.trajlen >= min_traj_len) & (dfraw.trajlen <= max_traj_len)]
-    print('Preprocessed-rm length. #traj={}'.format(dfraw.shape[0]))        #
+    dfraw['traj_len'] = dfraw.wgs_seq.apply(lambda traj: len(traj))
+    dfraw = dfraw[(dfraw.traj_len >= min_traj_len) & (dfraw.traj_len <= max_traj_len)]
+    print('==========> Preprocessed-rm length. #traj={}'.format(dfraw.shape[0]))
 
     # 4.output
-    dfraw = dfraw[['wgs_seq', 'merc_seq']].reset_index(drop=True)
+    dfraw = dfraw[['wgs_seq', 'merc_seq', "traj_len"]].reset_index(drop=True)
 
     dfraw.to_pickle(clean_data_path)
-    print('Preprocess end. @={:.0f}'.format(time.time() - _time))
-    return
+    print('==========> Preprocess end. @={:.0f}'.format(time.time() - _time))
+    return None
 
-def filtering_data():
+
+def sample_trajs():
     clean_data = pickle.load(open(clean_data_path, 'rb'))
     idx = random.sample(range(clean_data.shape[0]), 10000)
     data_1w = clean_data.iloc[idx]
-    data_1w.to_pickle(fine_tuning_data_path)
+    data_1w.to_pickle(geolife_1w)
     return
 
-
-######################################################################################
 
 ###########################################################################
 # ===calculate trajsimi distance matrix for trajsimi learning===
@@ -121,57 +115,27 @@ def traj_simi_computation(fn_name='hausdorff'):
     print("traj_simi_computation starts. fn={}".format(fn_name))
     _time = time.time()
 
-    data_1w = pickle.load(open(fine_tuning_data_path, 'rb'))
+    data_1w = pickle.load(open(geolife_1w, 'rb'))
     data_1w.reset_index()
     assert data_1w.shape[0] == 10000
     l = data_1w.shape[0]
 
-    trains,evals,tests = data_1w[:7000],data_1w[7000:8000],data_1w[8000:10000]
-    trains, evals, tests = _normalization([trains, evals, tests])
-
-    print("traj dataset sizes. traj: trains/evals/tests={}/{}/{}".format(trains.shape[0], evals.shape[0], tests.shape[0]))
-
     # 2.
     fn = _get_simi_fn(fn_name)
-    tests_simi = _simi_matrix(fn, tests)
-    evals_simi = _simi_matrix(fn, evals)
-    trains_simi = _simi_matrix(fn, trains)  # [ [simi, simi, ... ], ... ]
+    data_simi = _simi_matrix(fn, data_1w)
 
-    max_distance = max(max(map(max, trains_simi)), max(map(max, evals_simi)), max(map(max, tests_simi)))
-    _output_file = '{}/traj_simi_dict_{}.pkl'.format(root_path, fn_name)
+    _output_file = '{}/traj_simi_dict_{}_{}.pkl'.format(root_path, fn_name, str(min_traj_len)+str(max_traj_len))
     with open(_output_file, 'wb') as fh:
-        tup = trains_simi, evals_simi, tests_simi, max_distance
+        tup = data_simi
         pickle.dump(tup, fh, protocol=pickle.HIGHEST_PROTOCOL)
 
-    print("traj_simi_computation ends. @={:.3f}".format(time.time() - _time))
+    print("==========> traj_simi_computation ends. @={:.3f}".format(time.time() - _time))
     return tup
-
-def _normalization(lst_df):
-    # lst_df: [df, df, df]
-    xs = []
-    ys = []
-    for df in lst_df:
-        for _, v in df.merc_seq.items():
-            arr = np.array(v)
-            xs.append(arr[:,0])
-            ys.append(arr[:,1])
-
-    xs = np.concatenate(xs)
-    ys = np.concatenate(ys)
-    mean = np.array([xs.mean(), ys.mean()])
-    std = np.array([xs.std(), ys.std()])
-
-    for i in range(len(lst_df)):
-        lst_df[i].merc_seq = lst_df[i].merc_seq.apply(lambda lst: ( (np.array(lst)-mean)/std ).tolist())
-    return lst_df
 
 
 def _get_simi_fn(fn_name):
-    fn =  {'discret_frechet': tdist.discret_frechet,'sspd':tdist.sspd,'hausdorff': tdist.hausdorff}.get(fn_name, None)
-    if fn_name == 'lcss' or fn_name == 'edr':
-        fn = partial(fn, eps = 0.25)
+    fn = {'DFD': tdist.discret_frechet, 'sspd': tdist.sspd, 'haus': tdist.hausdorff}.get(fn_name, None)
     return fn
-
 
 def _simi_matrix(fn, df):
     _time = time.time()
@@ -210,49 +174,34 @@ def _simi_comp_operator(fn, df_trajs, sub_idx):
     simi = []
     l = df_trajs.shape[0]
     for _i in sub_idx:
-        t_i = np.array(df_trajs.iloc[_i].merc_seq)
+        t_i = np.array(df_trajs.iloc[_i].wgs_seq)
         simi_row = []
         for _j in range(_i + 1, l):
-            t_j = np.array(df_trajs.iloc[_j].merc_seq)
-            simi_row.append( float(fn(t_i, t_j)) )
+            t_j = np.array(df_trajs.iloc[_j].wgs_seq)
+            simi_row.append(float(fn(t_i, t_j)))
         simi.append(simi_row)
-    print('simi_comp_operator ends. sub_idx=[{}:{}], pid={}'.format(sub_idx[0], sub_idx[-1], os.getpid()))
+    print('simi_comp_operator ends. sub_idx=[{}:{}], pid={}' \
+          .format(sub_idx[0], sub_idx[-1], os.getpid()))
     return simi
 
 
 if __name__ == "__main__":
-    min_lon = 116.25  # √
-    max_lon = 116.5  # √
-    min_lat = 39.8  # √
-    max_lat = 40.1  # √
-    cellspace_buffer = 500
-    cell_size = 100
-
-    min_traj_len = 20
-    max_traj_len = 300
+    from TKDE_final.config import DATASET
+    min_lon, min_lat, max_lon, max_lat = DATASET["geolife"]["area_range"].values()
+    min_traj_len, max_traj_len = DATASET['geolife']["length"]
+    cell_size = DATASET['geolife']["cell_size"]
 
     root_path = os.getcwd()
-    raw_data_path = root_path + "/Geolife Trajectories 1.3/Data/"
-    cellspace_path = root_path + '/geolife_cellspace100.pkl'
-    clean_data_path = root_path + '/clean_geolife.pkl'
-    fine_tuning_data_path = root_path + "/geolife_1w.pkl"
+    # 换为自己的原始数据地址
+    raw_data_path = "/data/data_666/zhx111/dataset/geolife/Geolife Trajectories 1.3/Data/"
+    clean_data_path = root_path + '/clean_geolife_{}{}.pkl'.format(min_traj_len, max_traj_len)
+    geolife_1w = root_path + "/geolife_1w_{}{}.pkl".format(min_traj_len, max_traj_len)
 
-    # 1. init_cellspace
-    init_cellspace()
-
-    # 2
-    traj_paths = get_all_trajs_path(raw_data_path)      # 18670
-    trajs = batch_read_traj(traj_paths)                 #
-    print(len(trajs))
-    clean_and_output_data(trajs)
-    """
-    18670done!
-    18670
-    Preprocessed-rm range. #traj=14988
-    Preprocessed-rm length. #traj=10940
-    Preprocess end. @=31
-    """
-    # 3.
-    filtering_data()
-    traj_simi_computation('sspd')            # ['hausdorff','sspd','discret_frechet']
+    # 1.
+    # traj_paths = get_all_trajs_path(raw_data_path)      # 18670
+    # trajs = batch_read_traj(traj_paths)                 #
+    # clean_and_output_data(trajs)
+    # 2.
+    # sample_trajs()
+    traj_simi_computation('sspd')            # ['haus','sspd','DFD']
 

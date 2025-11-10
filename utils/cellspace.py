@@ -1,9 +1,20 @@
 import math
 
+
+def lonlat2meters(lon, lat):
+    R = 6378137.0  # WGS84 椭球体半径
+    # 限制纬度范围，避免无穷大
+    lat = max(min(lat, 85.05112878), -85.05112878)
+
+    x = R * math.radians(lon)
+    y = R * math.log(math.tan(math.pi / 4 + math.radians(lat) / 2))
+    return x, y
+
 class CellSpace:
     def __init__(self, x_unit: int, y_unit: int, x_min, y_min, x_max, y_max):
         assert x_unit > 0 and y_unit > 0
-
+        x_min, y_min = lonlat2meters(x_min, y_min)
+        x_max, y_max = lonlat2meters(x_max, y_max)
         self.x_unit = x_unit
         self.y_unit = y_unit
         
